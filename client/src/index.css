@@ -1,0 +1,61 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, monospace;
+  --font-body: "Inter", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink: #14171a;
+  --color-panel: #1c2023;
+  --color-panel-raised: #232830;
+  --color-line: #2c3339;
+  --color-paper: #eae6db;
+  --color-muted: #848d96;
+  --color-signal: #e8443a;
+  --color-signal-dim: #4a2422;
+  --color-done: #35c4a5;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+  }
+  body {
+    background-color: var(--color-ink);
+    color: var(--color-paper);
+    font-family: var(--font-body);
+    -webkit-font-smoothing: antialiased;
+  }
+  ::selection {
+    background-color: var(--color-signal);
+    color: var(--color-ink);
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Punch-clock pulsing dot */
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.25; }
+}
+.pulse-dot {
+  animation: pulse-dot 1.6s ease-in-out infinite;
+}
+
+/* Diagonal hatch texture */
+.hatch-bg {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--color-line) 0px,
+    var(--color-line) 1px,
+    transparent 1px,
+    transparent 8px
+  );
+}

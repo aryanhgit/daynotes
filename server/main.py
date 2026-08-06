@@ -34,22 +34,8 @@ def create_activity(payload: schemas.ActivityCreate, db: Session = Depends(get_d
         start_time=payload.start_time or datetime.now(timezone.utc),
     )
     db.add(activity)
-    # db.commit()
-    # db.refresh(activity)
-    # return schemas.ActivityRead.from_orm_with_duration(activity)
-
-
-    from sqlalchemy.orm import joinedload
-
     db.commit()
-
-    activity = (
-        db.query(models.Activity)
-        .options(joinedload(models.Activity.activity_type))
-        .filter(models.Activity.id == activity.id)
-        .first()
-    )
-
+    db.refresh(activity)
     return schemas.ActivityRead.from_orm_with_duration(activity)
 
 
