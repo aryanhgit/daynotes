@@ -6,21 +6,20 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session, joinedload
 from sqlalchemy import desc
 
-from database import Base, engine, get_db, run_lightweight_migrations
+from database import Base, engine, get_db
 import models
 import schemas
-import config
+from config import settings
 import sheets_sync
 import gaps
 
 Base.metadata.create_all(bind=engine)
-run_lightweight_migrations()
 
 app = FastAPI(title="daynotes api")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.allowed_origins,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -35,8 +34,22 @@ def create_activity(payload: schemas.ActivityCreate, db: Session = Depends(get_d
         start_time=payload.start_time or datetime.now(timezone.utc),
     )
     db.add(activity)
+    # db.commit()
+    # db.refresh(activity)
+    # return schemas.ActivityRead.from_orm_with_duration(activity)
+
+
+    from sqlalchemy.orm import joinedload
+
     db.commit()
-    db.refresh(activity)
+
+    activity = (
+        db.query(models.Activity)
+        .options(joinedload(models.Activity.activity_type))
+        .filter(models.Activity.id == activity.id)
+        .first()
+    )
+
     return schemas.ActivityRead.from_orm_with_duration(activity)
 
 
@@ -137,10 +150,10 @@ def sync_status(db: Session = Depends(get_db)):
         .count()
     )
     return schemas.SyncStatus(
-        configured=config.sheets_configured(),
+        configured=settings.sheets_configured(),
         unsynced_closed_count=unsynced_count,
-        sheet_id=config.GOOGLE_SHEET_ID,
-        sheet_range=config.GOOGLE_SHEET_RANGE,
+        sheet_id=settings.google_sheet_id,
+        sheet_range=settings.google_sheet_range,
     )
 
 
