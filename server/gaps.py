@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import List, Optional, Sequence
 
-import server.models as models
+import models
 
 MIN_GAP_SECONDS = 60
 
