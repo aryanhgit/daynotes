@@ -42,17 +42,3 @@ export function getSyncStatus() {
 export function syncToSheets() {
   return request("/api/sync/sheets", { method: "POST" });
 }
-
-export function listActivityTypes() {
-  return request("/api/activity-types");
-}
-
-export async function editActivity(id, { name, end_time }) {
-  const res = await fetch(`${BASE_URL}/api/activities/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name, end_time }),
-  });
-  if (!res.ok) throw new Error("Failed to update activity");
-  return res.json();
-}

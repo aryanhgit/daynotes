@@ -1,3 +1,7 @@
+// Display-only time formatting. Gap ("Untracked") computation now lives
+// server-side (backend/gaps.py, exposed via GET /timeline/today) as of
+// Step 4 — this file no longer needs to duplicate that logic.
+
 export function formatClockTime(date) {
   return new Date(date).toLocaleTimeString([], {
     hour: "2-digit",
