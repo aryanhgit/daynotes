@@ -6,12 +6,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
-from database import Base, engine, get_db
-import models
-import schemas
-from config import settings
-import sheets_sync
-import gaps
+from server.database import Base, engine, get_db
+import server.models as models
+import server.schemas as schemas
+from server.config import settings
+import server.sheets_sync as sheets_sync
+import server.gaps as gaps
 
 Base.metadata.create_all(bind=engine)
 
