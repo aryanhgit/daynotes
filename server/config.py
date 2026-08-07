@@ -1,8 +1,11 @@
 import os
 from dataclasses import dataclass
+from pathlib import Path
 from dotenv import load_dotenv
 
-load_dotenv()
+BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR / ".env")
 
 
 @dataclass
@@ -21,11 +24,20 @@ class Settings:
         )
 
 
+def _resolve_service_account_path(raw: str) -> str:
+    path = Path(raw)
+    if not path.is_absolute():
+        path = BASE_DIR / path
+    return str(path)
+
+
 settings = Settings(
     database_url=os.getenv("DATABASE_URL", "sqlite:///app.db"),
     allowed_origins=os.getenv("ALLOWED_ORIGINS", "http://localhost:3000",).split(","),
 
-    google_service_account_file=os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service-account.json",),
+    google_service_account_file=_resolve_service_account_path(
+        os.getenv("GOOGLE_SERVICE_ACCOUNT_FILE", "service-account.json")
+    ),
     google_sheet_id=os.getenv("GOOGLE_SHEET_ID"),
     google_sheet_range=os.getenv("GOOGLE_SHEET_RANGE","Sheet1!A:E",),
 )
