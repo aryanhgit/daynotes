@@ -4,22 +4,25 @@ from pydantic import BaseModel, ConfigDict
 
 
 class ActivityCreate(BaseModel):
-    activity_type_id: int
-    description: Optional[str] = None
+    """Body for POST /activities."""
+
+    name: str
     start_time: Optional[datetime] = None
 
+
 class ActivityUpdate(BaseModel):
-    activity_type_id: Optional[int] = None
-    description: Optional[str] = None
+    """Body for PATCH /activities/{id} closes out an activity."""
+
     end_time: Optional[datetime] = None
 
+
 class ActivityRead(BaseModel):
+    """An activity as returned by the API."""
+
     model_config = ConfigDict(from_attributes=True)
 
     id: int
-    activity_type_id: int
     name: str
-    description: Optional[str] = None
     start_time: datetime
     end_time: Optional[datetime] = None
     duration_seconds: Optional[float] = None
@@ -32,9 +35,7 @@ class ActivityRead(BaseModel):
             duration = (activity.end_time - activity.start_time).total_seconds()
         return ActivityRead(
             id=activity.id,
-            activity_type_id=activity.activity_type_id,
-            name=activity.activity_type.name,
-            description=activity.description,
+            name=activity.name,
             start_time=activity.start_time,
             end_time=activity.end_time,
             duration_seconds=duration,
@@ -42,7 +43,7 @@ class ActivityRead(BaseModel):
         )
 
 class SyncResult(BaseModel):
-    """Response for POST /api/sync/sheets."""
+    """Response for POST /sync/sheets."""
 
     synced_count: int
     skipped_open_count: int
@@ -50,7 +51,7 @@ class SyncResult(BaseModel):
 
 
 class SyncStatus(BaseModel):
-    """Response for GET /api/sync/status."""
+    """Response for GET /sync/status."""
 
     configured: bool
     unsynced_closed_count: int
@@ -68,20 +69,9 @@ class GapRead(BaseModel):
 
 
 class TimelineEntry(BaseModel):
-    """One row of GET /api/timeline/today."""
+    """One row of either an activity or a gap, already in chronological 
+    order with gaps threaded between the activities on either side of them."""
 
     kind: str  # "activity" | "gap"
     activity: Optional[ActivityRead] = None
     gap: Optional[GapRead] = None
-
-
-class ActivityTypeCreate(BaseModel):
-    name: str
-
-
-class ActivityTypeOut(BaseModel):
-    id: int
-    name: str
-
-    class Config:
-        from_attributes = True

@@ -3,7 +3,7 @@ from typing import List
 
 from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session
 from sqlalchemy import desc
 
 from database import Base, engine, get_db
@@ -15,7 +15,7 @@ import gaps
 
 Base.metadata.create_all(bind=engine)
 
-app = FastAPI(title="daynotes api")
+app = FastAPI(title="day notes API")
 
 app.add_middleware(
     CORSMiddleware,
@@ -24,13 +24,13 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
+
 @app.post("/api/activities", response_model=schemas.ActivityRead, status_code=201)
 def create_activity(payload: schemas.ActivityCreate, db: Session = Depends(get_db)):
-    """Start a new activity. start time defaults to now if not given."""
-
+    """Start a new activity."""
     activity = models.Activity(
-        activity_type_id=payload.activity_type_id,
-        description=payload.description,
+        name=payload.name,
         start_time=payload.start_time or datetime.now(timezone.utc),
     )
     db.add(activity)
@@ -45,36 +45,25 @@ def update_activity(
     payload: schemas.ActivityUpdate,
     db: Session = Depends(get_db),
 ):
-    """Close out an activity by setting its end time (defaults to now)."""
-
+    """Close out an activity."""
     activity = db.query(models.Activity).filter(models.Activity.id == activity_id).first()
     if activity is None:
         raise HTTPException(status_code=404, detail="Activity not found")
 
-    if payload.activity_type_id is not None:
-        activity.activity_type_id = payload.activity_type_id # type: ignore
-
-    if payload.description is not None:
-        activity.description = payload.description # type: ignore
-
-    if payload.end_time is not None:
-        activity.end_time = payload.end_time # type: ignore
-    
+    activity.end_time = payload.end_time or datetime.now(timezone.utc) # type: ignore
     db.commit()
     db.refresh(activity)
+
     return schemas.ActivityRead.from_orm_with_duration(activity)
 
 
 @app.get("/api/activities", response_model=List[schemas.ActivityRead])
 def list_activities(db: Session = Depends(get_db)):
     """List all activities, most recent first."""
-
     activities = (
-        db.query(models.Activity).options(joinedload(models.Activity.activity_type))
-        .order_by(desc(models.Activity.start_time)).all()
+        db.query(models.Activity).order_by(desc(models.Activity.start_time)).all()
     )
     return [schemas.ActivityRead.from_orm_with_duration(a) for a in activities]
-
 
 
 @app.get("/api/timeline/today", response_model=List[schemas.TimelineEntry])
@@ -83,12 +72,9 @@ def timeline_today(db: Session = Depends(get_db)):
 
     todays_activities = (
         db.query(models.Activity)
-        .options(joinedload(models.Activity.activity_type))
-        .filter(
-            models.Activity.start_time >= datetime(
-                today.year, today.month, today.day, tzinfo=timezone.utc
-            )
-        )
+        .filter(models.Activity.start_time >= datetime(
+            today.year, today.month, today.day, tzinfo=timezone.utc
+        ))
         .order_by(models.Activity.start_time)
         .all()
     )
@@ -123,10 +109,9 @@ def timeline_today(db: Session = Depends(get_db)):
     return timeline
 
 
-
 @app.get("/api/sync/status", response_model=schemas.SyncStatus)
 def sync_status(db: Session = Depends(get_db)):
-    """Check sync configuration and backlog."""
+    """Checks sync configuration + backlog."""
     unsynced_count = (
         db.query(models.Activity)
         .filter(
@@ -147,12 +132,10 @@ def sync_status(db: Session = Depends(get_db)):
 def sync_sheets(db: Session = Depends(get_db)):
     all_closed = (
         db.query(models.Activity)
-        .options(joinedload(models.Activity.activity_type))
         .filter(models.Activity.end_time.isnot(None))
         .order_by(models.Activity.start_time)
         .all()
     )
-
     pending_ids = {a.id for a in all_closed if not a.synced_to_sheets} # type: ignore
     still_open_count = (
         db.query(models.Activity)
@@ -193,20 +176,3 @@ def sync_sheets(db: Session = Depends(get_db)):
         skipped_open_count=still_open_count,
         activity_ids=[a.id for a in synced_activities],
     )
-
-@app.get("/api/activity-types", response_model=list[schemas.ActivityTypeOut])
-def list_activity_types(db: Session = Depends(get_db)):
-    return db.query(models.ActivityType).order_by(models.ActivityType.name).all()
-
-
-@app.post("/api/activity-types", response_model=schemas.ActivityTypeOut, status_code=201)
-def create_activity_type(payload: schemas.ActivityTypeCreate, db: Session = Depends(get_db)):
-    existing = db.query(models.ActivityType).filter_by(name=payload.name).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Activity type already exists")
-
-    activity_type = models.ActivityType(name=payload.name)
-    db.add(activity_type)
-    db.commit()
-    db.refresh(activity_type)
-    return activity_type
