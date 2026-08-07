@@ -18,14 +18,14 @@ class Gap:
 
 
 def compute_gaps(
-    acts_sort_by_start: Sequence["models.Activity"],
+    activities_sorted_by_start: Sequence["models.Activity"],
     min_gap_seconds: float = MIN_GAP_SECONDS,
 ) -> List[Optional[Gap]]:
-    gaps: List[Optional[Gap]] = [None] * len(acts_sort_by_start)
+    gaps: List[Optional[Gap]] = [None] * len(activities_sorted_by_start)
 
-    for i in range(1, len(acts_sort_by_start)):
-        prev = acts_sort_by_start[i - 1]
-        current = acts_sort_by_start[i]
+    for i in range(1, len(activities_sorted_by_start)):
+        prev = activities_sorted_by_start[i - 1]
+        current = activities_sorted_by_start[i]
 
         if prev.end_time is None:
             continue  # shouldn't happen given the caller's contract, but be safe
