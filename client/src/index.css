@@ -40,7 +40,7 @@
   }
 }
 
-/* Punch-clock pulsing dot */
+/* Punch-clock pulsing dot for the active activity */
 @keyframes pulse-dot {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.25; }
@@ -49,7 +49,7 @@
   animation: pulse-dot 1.6s ease-in-out infinite;
 }
 
-/* Diagonal hatch texture */
+/* Diagonal hatch texture used for "Untracked" gap rows */
 .hatch-bg {
   background-image: repeating-linear-gradient(
     -45deg,

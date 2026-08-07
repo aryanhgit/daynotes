@@ -41,8 +41,6 @@ export default function App() {
 
   useEffect(() => {
     refresh();
-    // Light polling keeps this in sync if the same log is open in
-    // another tab/device; cheap enough for a single-user tool.
     const id = setInterval(refresh, 15000);
     return () => clearInterval(id);
   }, [refresh]);
