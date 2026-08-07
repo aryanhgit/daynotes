@@ -1,7 +1,7 @@
 import ActivityRow from "./ActivityRow";
 import GapRow from "./GapRow";
 
-export default function ActivityList({ timeline, onEditActivity }) {
+export default function ActivityList({ timeline }) {
   if (timeline.length === 0) {
     return (
       <div className="text-center py-10">
@@ -10,18 +10,11 @@ export default function ActivityList({ timeline, onEditActivity }) {
     );
   }
 
-  async function handleEdit(id, changes) {
-    await editActivity(id, changes);
-    setEditingActivity(null);
-    refresh();
-  }
-
   return (
     <div className="divide-y divide-line">
       {timeline.map((entry, i) =>
         entry.kind === "activity" ? (
-          <ActivityRow key={entry.activity.id} activity={entry.activity} onEditActivity={onEditActivity}
-          />
+          <ActivityRow key={entry.activity.id} activity={entry.activity} />
         ) : (
           <GapRow key={`gap-${i}`} gap={entry.gap} />
         )

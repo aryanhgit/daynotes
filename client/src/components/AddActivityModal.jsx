@@ -1,10 +1,8 @@
 import { useEffect, useRef, useState } from "react";
-import { listActivityTypes } from "../lib/api";
 
 function toLocalInputValue(date) {
   const pad = (n) => String(n).padStart(2, "0");
   const d = new Date(date);
-  
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(
     d.getHours()
   )}:${pad(d.getMinutes())}`;
@@ -18,16 +16,6 @@ export default function AddActivityModal({ knownNames, onClose, onSubmit }) {
   const [error, setError] = useState(null);
   const nameInputRef = useRef(null);
 
-  const [description, setDescription] = useState("");
-  const [activityTypes, setActivityTypes] = useState([]);
-
-  useEffect(() => {
-    listActivityTypes().then((types) => {
-      setActivityTypes(types);
-      if (types.length) setName(types[0].name);
-    });
-  }, []);
-
   useEffect(() => {
     nameInputRef.current?.focus();
   }, []);
@@ -38,19 +26,24 @@ export default function AddActivityModal({ knownNames, onClose, onSubmit }) {
     return () => window.removeEventListener("keydown", onKey);
   }, [onClose]);
 
-  function submit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!name) return;
-
-    const start_time = fromLocalInput(start);
-    let end_time = null;
-    if (durationMinutes) {
-      const end = new Date(start_time);
-      end.setMinutes(end.getMinutes() + Number(durationMinutes));
-      end_time = end.toISOString();
+    if (!name.trim()) {
+      setError("Give the activity a name.");
+      return;
     }
-
-    onCreate({ name, description: description.trim() || null, start_time, end_time });
+    setSubmitting(true);
+    setError(null);
+    try {
+      await onSubmit({
+        name: name.trim(),
+        startTime: new Date(startTime).toISOString(),
+        durationMinutes: durationMinutes ? Number(durationMinutes) : null,
+      });
+    } catch (err) {
+      setError(err.message);
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -60,7 +53,7 @@ export default function AddActivityModal({ knownNames, onClose, onSubmit }) {
     >
       <form
         onClick={(e) => e.stopPropagation()}
-        onSubmit={submit}
+        onSubmit={handleSubmit}
         className="bg-panel border border-line rounded-lg w-full max-w-sm p-5"
       >
         <h2 className="text-base font-semibold text-paper mb-4">
@@ -70,31 +63,19 @@ export default function AddActivityModal({ knownNames, onClose, onSubmit }) {
         <label className="block text-xs uppercase tracking-wide text-muted mb-1.5">
           Activity
         </label>
-        <select
+        <input
+          ref={nameInputRef}
+          list="known-activity-names"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className="w-full bg-panel-raised border border-line rounded-md px-3 py-2 text-sm text-paper mb-4 focus:outline-none focus:ring-1 focus:ring-signal"
-          autoFocus
-        >
-          {activityTypes.length === 0 && (
-            <option value="">Loading…</option>
-          )}
-          {activityTypes.map((t) => (
-            <option key={t.id} value={t.name}>
-              {t.name}
-            </option>
-          ))}
-        </select>
-
-        <label className="block text-xs uppercase tracking-wide text-muted mb-1.5">
-          Description (optional)
-        </label>
-        <input
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          placeholder="A short note"
+          placeholder="Deep work, Email, Standup…"
           className="w-full bg-panel-raised border border-line rounded-md px-3 py-2 text-sm text-paper placeholder:text-muted/70 mb-4 focus:outline-none focus:ring-1 focus:ring-signal"
         />
+        <datalist id="known-activity-names">
+          {knownNames.map((n) => (
+            <option key={n} value={n} />
+          ))}
+        </datalist>
 
         <label className="block text-xs uppercase tracking-wide text-muted mb-1.5">
           Start time
@@ -111,13 +92,13 @@ export default function AddActivityModal({ knownNames, onClose, onSubmit }) {
         </label>
         <input
           type="number"
-          min="1"
+          min="0"
+          step="1"
           value={durationMinutes}
           onChange={(e) => setDurationMinutes(e.target.value)}
           placeholder="Leave blank to keep it running"
           className="w-full bg-panel-raised border border-line rounded-md px-3 py-2 text-sm font-display text-paper placeholder:text-muted/70 mb-1 focus:outline-none focus:ring-1 focus:ring-signal"
         />
-
         <p className="text-xs text-muted mb-4">
           If set, the activity is logged as already finished.
         </p>
@@ -132,7 +113,6 @@ export default function AddActivityModal({ knownNames, onClose, onSubmit }) {
           >
             Cancel
           </button>
-
           <button
             type="submit"
             disabled={submitting}

@@ -45,7 +45,7 @@ export default function SyncPanel({ status, onSynced }) {
             )
           ) : (
             <span>
-              Sheets sync isn't configured —{" "}
+              Sheets sync isn't configured.
             </span>
           )}
         </div>
